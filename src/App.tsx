@@ -5,8 +5,10 @@ import confetti from "canvas-confetti";
 
 export default function App() {
   const [yesButtonPos, setYesButtonPos] = useState({ x: 0, y: 0, rotate: 0, scale: 1 });
+  const [noButtonPos, setNoButtonPos] = useState({ x: 0, y: 0, rotate: 0, scale: 1 });
   const [outcome, setOutcome] = useState<"none" | "yes" | "no">("none");
   const [yesCount, setYesCount] = useState(0);
+  const [noCount, setNoCount] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
 
   const shareText = "I just chose a future-proof career in IT with Jetking! 🚀 #Jetking #ITCareer #Innovation";
@@ -51,15 +53,20 @@ export default function App() {
     }
   }, [outcome]);
 
-  const moveButton = () => {
-    const minJump = 100;
+  const moveButton = (type: "yes" | "no") => {
+    // If they've tried enough times, let them click it!
+    if (type === "yes" && yesCount > 12) return;
+    if (type === "no" && noCount > 8) return;
+
+    const minJump = 120;
     
-    // Calculate safe ranges based on viewport size to prevent going off-screen
-    const safeWidth = window.innerWidth * 0.6;
-    const safeHeight = window.innerHeight * 0.6;
+    const safeWidth = window.innerWidth * 0.5;
+    const safeHeight = window.innerHeight * 0.5;
     
     let newX, newY;
     let attempts = 0;
+    
+    const currentPos = type === "yes" ? yesButtonPos : noButtonPos;
     
     do {
       newX = (Math.random() - 0.5) * safeWidth;
@@ -67,29 +74,44 @@ export default function App() {
       attempts++;
     } while (
       attempts < 20 &&
-      Math.abs(newX - yesButtonPos.x) < minJump && 
-      Math.abs(newY - yesButtonPos.y) < minJump
+      Math.abs(newX - currentPos.x) < minJump && 
+      Math.abs(newY - currentPos.y) < minJump
     );
 
     const newRotate = (Math.random() - 0.5) * 40;
     const newScale = 0.8 + Math.random() * 0.4;
 
-    setYesButtonPos({ x: newX, y: newY, rotate: newRotate, scale: newScale });
-    setYesCount((prev) => prev + 1);
+    if (type === "yes") {
+      setYesButtonPos({ x: newX, y: newY, rotate: newRotate, scale: newScale });
+      setYesCount((prev) => prev + 1);
+    } else {
+      setNoButtonPos({ x: newX, y: newY, rotate: newRotate, scale: newScale });
+      setNoCount((prev) => prev + 1);
+    }
   };
 
   const handleYes = () => {
-    setOutcome("yes");
+    if (yesCount > 12) {
+      setOutcome("yes");
+    } else {
+      moveButton("yes");
+    }
   };
 
   const handleNo = () => {
-    setOutcome("no");
+    if (noCount > 8) {
+      setOutcome("no");
+    } else {
+      moveButton("no");
+    }
   };
 
   const handleRefresh = () => {
     setOutcome("none");
     setYesCount(0);
+    setNoCount(0);
     setYesButtonPos({ x: 0, y: 0, rotate: 0, scale: 1 });
+    setNoButtonPos({ x: 0, y: 0, rotate: 0, scale: 1 });
   };
 
   // Messages that change as they try to click "Yes"
@@ -143,7 +165,7 @@ export default function App() {
             
             <p className="text-blue-500 text-xl mb-12 italic">The path to your dream IT career!</p>
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 relative min-h-[100px]">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 relative min-h-[150px]">
               <motion.button
                 animate={{ 
                   x: yesButtonPos.x, 
@@ -152,7 +174,7 @@ export default function App() {
                   scale: yesButtonPos.scale 
                 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                onMouseEnter={moveButton}
+                onMouseEnter={() => moveButton("yes")}
                 onClick={handleYes}
                 className="px-12 py-4 bg-blue-600 text-white rounded-full text-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors z-20 whitespace-nowrap"
               >
@@ -160,13 +182,19 @@ export default function App() {
               </motion.button>
 
               <motion.button
+                animate={{ 
+                  x: noButtonPos.x, 
+                  y: noButtonPos.y, 
+                  rotate: noButtonPos.rotate,
+                }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                onMouseEnter={() => moveButton("no")}
                 onClick={handleNo}
                 className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-200 rounded-full text-xl font-semibold shadow-sm hover:shadow-md transition-shadow whitespace-nowrap z-10"
               >
-                No
+                {noCount > 8 ? "Okay, No" : "No"}
               </motion.button>
             </div>
           </motion.div>
